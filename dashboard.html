@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VexHack Panel - Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --bg: #0a0a0f; --surface: #1a1a25; --surface2: #222230; --text: #fff; --text-muted: #a0a0b0; --accent: #7850ff; --border: #2a2a3a; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    nav { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: rgba(10,10,15,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); border-radius: 0 0 20px 20px; z-index: 1000; }
+    .logo { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #7850ff, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; gap: 30px; list-style: none; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-weight: 500; transition: color 0.3s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+    .nav-right { display: flex; gap: 15px; align-items: center; }
+    .btn { padding: 10px 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); text-decoration: none; font-size: 14px; cursor: pointer; transition: all 0.3s; }
+    .btn:hover { border-color: var(--accent); }
+    header { padding: 120px 40px 40px; }
+    h1 { font-size: 36px; font-weight: 700; margin-bottom: 10px; background: linear-gradient(135deg, #7850ff, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: var(--text-muted); margin-bottom: 30px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 40px 40px; }
+    .section-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
+    .plugins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    .plugin-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; transition: all 0.3s; }
+    .plugin-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 10px 30px rgba(120,80,255,0.15); }
+    .plugin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .plugin-name { font-size: 18px; font-weight: 700; }
+    .plugin-code { background: var(--accent); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .plugin-desc { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 15px; white-space: pre-line; }
+    .plugin-download { display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #7850ff, #a855f7); color: white; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 600; transition: all 0.3s; }
+    .plugin-download:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(120,80,255,0.4); }
+    .stats { display: flex; gap: 30px; margin-bottom: 30px; }
+    .stat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-width: 150px; }
+    .stat-number { font-size: 32px; font-weight: 700; color: var(--accent); }
+    .stat-label { color: var(--text-muted); font-size: 14px; }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .plugins-grid { grid-template-columns: 1fr; }
+      .stats { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">VexHack</div>
+    <ul class="nav-links">
+      <li><a href="#" class="active">Pluginy</a></li>
+      <li><a href="#">O nas</a></li>
+      <li><a href="#">Kontakt</a></li>
+    </ul>
+    <div class="nav-right">
+      <span id="usernameDisplay" style="color: var(--text-muted); font-size: 14px;"></span>
+      <button class="btn" onclick="logout()">Wyloguj</button>
+    </div>
+  </nav>
+
+  <header>
+    <h1>Plugin Panel</h1>
+    <p class="subtitle">Witaj w panelu! Tutaj znajdziesz wszystkie nasze pluginy i skrypty.</p>
+  </header>
+
+  <div class="container">
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-number" id="pluginCount">0</div>
+        <div class="stat-label">Pluginów</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">VexHack</div>
+        <div class="stat-label">Team</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">📦 Wszystkie pluginy</h2>
+    <div class="plugins-grid" id="pluginsGrid"></div>
+  </div>
+
+  <script>
+    const API_URL = '/api';
+    
+    function checkAuth() {
+      const user = JSON.parse(localStorage.getItem('vexpanel_user') || '{}');
+      if (!user.token) {
+        window.location.href = 'login.html';
+        return;
+      }
+      document.getElementById('usernameDisplay').textContent = user.username || 'Użytkownik';
+      loadPlugins();
+    }
+    
+    function logout() {
+      localStorage.removeItem('vexpanel_user');
+      window.location.href = 'login.html';
+    }
+    
+    async function loadPlugins() {
+      try {
+        const response = await fetch(API_URL + '/plugins');
+        const plugins = await response.json();
+        
+        document.getElementById('pluginCount').textContent = plugins.length;
+        
+        const grid = document.getElementById('pluginsGrid');
+        grid.innerHTML = plugins.map(p => `
+          <div class="plugin-card">
+            <div class="plugin-header">
+              <span class="plugin-name">${p.name}</span>
+              <span class="plugin-code">${p.code}</span>
+            </div>
+            <p class="plugin-desc">${p.description}</p>
+            <a href="${p.link}" class="plugin-download" target="_blank">⬇️ Pobierz</a>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Błąd:', error);
+      }
+    }
+    
+    checkAuth();
+  </script>
+</body>
+</html>

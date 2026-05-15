@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VexHack Panel - Logowanie</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --bg: #0a0a0f; --surface: #1a1a25; --text: #fff; --text-muted: #a0a0b0; --accent: #7850ff; --success: #22c55e; --error: #ef4444; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    .container { max-width: 400px; width: 100%; background: var(--surface); border: 1px solid #2a2a3a; border-radius: 24px; padding: 40px; text-align: center; }
+    .logo { font-size: 36px; font-weight: 800; background: linear-gradient(135deg, #7850ff, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+    h1 { font-size: 22px; margin-bottom: 25px; }
+    input { width: 100%; padding: 14px 18px; background: var(--bg); border: 2px solid #2a2a3a; border-radius: 12px; color: white; font-size: 16px; margin-bottom: 15px; transition: border-color 0.3s; }
+    input:focus { outline: none; border-color: var(--accent); }
+    button { width: 100%; padding: 16px; background: linear-gradient(135deg, #7850ff, #a855f7); border: none; border-radius: 12px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(120,80,255,0.4); }
+    .message { padding: 14px; border-radius: 10px; margin-top: 15px; font-size: 14px; display: none; }
+    .message.success { background: rgba(34,197,94,0.15); border: 1px solid var(--success); color: var(--success); }
+    .message.error { background: rgba(239,68,68,0.15); border: 1px solid var(--error); color: var(--error); }
+    .link { margin-top: 20px; color: var(--text-muted); font-size: 14px; }
+    .link a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">VexHack</div>
+    <h1>Panel</h1>
+    
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Nazwa użytkownika" required>
+      <input type="password" id="password" placeholder="Hasło" required>
+      <button type="submit">Zaloguj się</button>
+      <div class="message" id="message"></div>
+    </form>
+    
+    <div class="link">
+      Nie masz konta? <a href="register.html">Zarejestruj się</a>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api';
+    
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const msg = document.getElementById('message');
+      
+      msg.className = 'message';
+      msg.textContent = 'Logowanie...';
+      msg.style.display = 'block';
+      
+      try {
+        const response = await fetch(API_URL + '/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          localStorage.setItem('vexpanel_user', JSON.stringify(data));
+          msg.className = 'message success';
+          msg.textContent = '✅ Zalogowano! Przekierowanie...';
+          
+          setTimeout(() => {
+            if (data.isAdmin) {
+              window.location.href = 'admin.html';
+            } else {
+              window.location.href = 'dashboard.html';
+            }
+          }, 1000);
+        } else {
+          msg.className = 'message error';
+          msg.textContent = '❌ ' + data.error;
+        }
+      } catch (error) {
+        msg.className = 'message error';
+        msg.textContent = '❌ Błąd połączenia!';
+      }
+    });
+  </script>
+</body>
+</html>

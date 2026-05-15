@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VexHack Panel - Rejestracja</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a0f;
+      --surface: #1a1a25;
+      --text: #fff;
+      --text-muted: #a0a0b0;
+      --accent: #7850ff;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 450px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid #2a2a3a;
+      border-radius: 24px;
+      padding: 40px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 36px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #7850ff, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 5px;
+    }
+    h1 { font-size: 22px; margin-bottom: 10px; }
+    p { color: var(--text-muted); margin-bottom: 25px; line-height: 1.6; }
+    .icon { font-size: 60px; margin-bottom: 15px; }
+    input {
+      width: 100%;
+      padding: 14px 18px;
+      background: var(--bg);
+      border: 2px solid #2a2a3a;
+      border-radius: 12px;
+      color: white;
+      font-size: 16px;
+      margin-bottom: 15px;
+      transition: border-color 0.3s;
+    }
+    input:focus { outline: none; border-color: var(--accent); }
+    textarea {
+      width: 100%;
+      padding: 14px 18px;
+      background: var(--bg);
+      border: 2px solid #2a2a3a;
+      border-radius: 12px;
+      color: white;
+      font-size: 14px;
+      margin-bottom: 15px;
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    label {
+      display: block;
+      text-align: left;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #7850ff, #a855f7);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(120,80,255,0.4); }
+    .message {
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 14px;
+      display: none;
+    }
+    .message.success { background: rgba(34,197,94,0.15); border: 1px solid var(--success); color: var(--success); }
+    .message.error { background: rgba(239,68,68,0.15); border: 1px solid var(--error); color: var(--error); }
+    .link { margin-top: 20px; color: var(--text-muted); font-size: 14px; }
+    .link a { color: var(--accent); text-decoration: none; }
+    .link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📝</div>
+    <div class="logo">VexHack</div>
+    <h1>Rejestracja</h1>
+    <p>Utwórz konto aby uzyskać dostęp do panelu z pluginami</p>
+    
+    <form id="registerForm">
+      <input type="text" id="username" placeholder="Nazwa użytkownika" required>
+      <input type="password" id="password" placeholder="Hasło" required>
+      <input type="password" id="password2" placeholder="Powtórz hasło" required>
+      
+      <label>Screenshot 1 (Discord profil):</label>
+      <textarea id="screen1" placeholder="Wklej link do screenshota #1"></textarea>
+      
+      <label>Screenshot 2 (Serwer Discord):</label>
+      <textarea id="screen2" placeholder="Wklej link do screenshota #2"></textarea>
+      
+      <button type="submit">Zarejestruj się</button>
+      <div class="message" id="message"></div>
+    </form>
+    
+    <div class="link">
+      Masz już konto? <a href="login.html">Zaloguj się</a>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api';
+    
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const password2 = document.getElementById('password2').value;
+      const screen1 = document.getElementById('screen1').value;
+      const screen2 = document.getElementById('screen2').value;
+      const msg = document.getElementById('message');
+      
+      if (password !== password2) {
+        msg.className = 'message error';
+        msg.textContent = 'Hasła nie są identyczne!';
+        msg.style.display = 'block';
+        return;
+      }
+      
+      msg.className = 'message';
+      msg.textContent = 'Rejestracja...';
+      msg.style.display = 'block';
+      
+      try {
+        const response = await fetch(API_URL + '/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username,
+            password,
+            screenshots: [screen1, screen2]
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          msg.className = 'message success';
+          msg.textContent = '✅ ' + data.message;
+          document.getElementById('username').value = '';
+          document.getElementById('password').value = '';
+          document.getElementById('password2').value = '';
+          document.getElementById('screen1').value = '';
+          document.getElementById('screen2').value = '';
+        } else {
+          msg.className = 'message error';
+          msg.textContent = '❌ ' + data.error;
+        }
+      } catch (error) {
+        msg.className = 'message error';
+        msg.textContent = '❌ Błąd połączenia z serwerem!';
+      }
+    });
+  </script>
+</body>
+</html>
