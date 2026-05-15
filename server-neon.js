@@ -1,6 +1,6 @@
 // Neon Database Configuration
 // Ustaw zmienną środowiskową DATABASE_URL w Neon dashboard
-const DATABASE_URL = 'postgresql://username:password@ep-xxx-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require';
+const DATABASE_URL = 'postgresql://neondb_owner:npg_3TehoqAMrPU8@ep-dark-bread-aqinhdkp-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 
 const { Pool } = require('pg');
 const fs = require('fs');
