@@ -229,13 +229,21 @@ module.exports = async (req, res) => {
       if (result.rows.length === 0) return res.status(400).json({ error: 'Nieprawidłowy lub wygasły kod!' });
 
       const data = result.rows[0];
-      await db.query('UPDATE discord_codes SET used = true WHERE code = $1', [code]);
-      await db.query('INSERT INTO discord_users (discord_id, discord_username, role_id) VALUES ($1,$2,$3) ON CONFLICT (discord_id) DO UPDATE SET discord_username = $2', [data.discord_id, data.discord_username, data.role_id]);
 
-      // Save as regular user so they can log in via login.html
+      // Check if this Discord account is already linked
+      const existing = await db.query('SELECT * FROM discord_users WHERE discord_id = $1', [data.discord_id]);
+      if (existing.rows.length > 0) return res.status(400).json({ error: 'To konto Discord jest już połączone z innym kontem!' });
+
+      // Check if username is already taken
+      const userExists = await db.query('SELECT * FROM users WHERE username = $1', [data.discord_username]);
+      if (userExists.rows.length > 0) return res.status(400).json({ error: 'Użytkownik o tej nazwie już istnieje!' });
+
+      await db.query('UPDATE discord_codes SET used = true WHERE code = $1', [code]);
+      await db.query('INSERT INTO discord_users (discord_id, discord_username, role_id) VALUES ($1,$2,$3)', [data.discord_id, data.discord_username, data.role_id]);
+
       if (password) {
         const screenshots = JSON.stringify(['discord_verified']);
-        await db.query('INSERT INTO users (username, password, screenshots, approved) VALUES ($1, $2, $3, true) ON CONFLICT (username) DO UPDATE SET password = $2, approved = true', [data.discord_username, password, screenshots]);
+        await db.query("INSERT INTO users (username, password, screenshots, approved) VALUES ($1, $2, $3, true)", [data.discord_username, password, screenshots]);
       }
 
       return res.json({ success: true, discordId: data.discord_id, discordUsername: data.discord_username, message: 'Konto połączone! Możesz się logować.' });
